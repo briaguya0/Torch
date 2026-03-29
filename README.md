@@ -1,6 +1,8 @@
 # Torch - [T]orch is [O]ur [R]esource [C]onversion [H]elper
 A generic asset processor for games
 
+> This README was touched by Claude Code to test git SSH setup.
+
 ## Usage
 `./torch otr baserom.z64`
 `./torch code baserom.z64`

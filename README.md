@@ -1,8 +1,6 @@
 # Torch - [T]orch is [O]ur [R]esource [C]onversion [H]elper
 A generic asset processor for games
 
-test
-
 ## Usage
 `./torch otr baserom.z64`
 `./torch code baserom.z64`

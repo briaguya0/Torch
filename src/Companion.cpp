@@ -1698,6 +1698,21 @@ std::optional<std::tuple<std::string, YAML::Node>> Companion::GetNodeByAddr(uint
     return std::nullopt;
 }
 
+std::optional<AssetLookup> Companion::GetNodeLookupByAddr(uint32_t addr) {
+    auto node = this->GetNodeByAddr(addr);
+    if (!node.has_value()) {
+        return std::nullopt;
+    }
+    auto& [path, n] = node.value();
+    return AssetLookup{
+        path,
+        n["type"] ? GetTypeNode(n) : "",
+        GetSafeNode<std::string>(n, "symbol", ""),
+        GetSafeNode<uint32_t>(n, "offset", 0),
+        GetSafeNode<uint32_t>(n, "count", 0),
+    };
+}
+
 std::optional<std::string> Companion::GetStringByAddr(const uint32_t addr) {
     if (Torch::contains(this->gManualSegments, addr)) {
         return this->gManualSegments[addr];
@@ -1752,16 +1767,29 @@ std::optional<std::string> Companion::GetSafeStringByAddr(const uint32_t addr, s
     return std::get<0>(node.value());
 }
 
+std::optional<AssetLookup> Companion::GetSafeNodeLookupByAddr(const uint32_t addr, std::string type) {
+    auto node = this->GetSafeNodeByAddr(addr, type);
+    if (!node.has_value()) {
+        return std::nullopt;
+    }
+    auto& [path, n] = node.value();
+    return AssetLookup{
+        path,
+        type,
+        GetSafeNode<std::string>(n, "symbol", ""),
+        GetSafeNode<uint32_t>(n, "offset", 0),
+        GetSafeNode<uint32_t>(n, "count", 0),
+    };
+}
+
 std::string Companion::GetSymbolFromAddr(uint32_t address, bool validZero) {
-    auto dec = Companion::Instance->GetNodeByAddr(address);
+    auto dec = Companion::Instance->GetNodeLookupByAddr(address);
     std::ostringstream outSymbol;
 
     if (address == 0 && !validZero) {
         outSymbol << "NULL";
     } else if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        outSymbol << "&" << symbol;
+        outSymbol << "&" << dec->symbol;
     } else {
         outSymbol << "0x" << std::uppercase << std::hex << address;
     }

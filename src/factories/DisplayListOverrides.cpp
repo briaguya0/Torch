@@ -13,7 +13,7 @@
 
 namespace GFXDOverride {
 
-std::unordered_map<uint32_t, std::tuple<std::string, YAML::Node>> mVtxOverlaps;
+std::unordered_map<uint32_t, AssetLookup> mVtxOverlaps;
 
 #ifdef STANDALONE
 void Triangle2(const N64Gfx* gfx) {
@@ -57,29 +57,23 @@ int Vtx(uint32_t ptr, int32_t num) {
     auto vtx = GetVtxOverlap(ptr);
 
     if (vtx.has_value()) {
-        auto symbol = std::get<0>(vtx.value());
-        auto node = std::get<1>(vtx.value());
+        auto& lookup = vtx.value();
+        auto idx = (ptr - lookup.offset) / sizeof(N64Vtx_t);
 
-        auto offset = GetSafeNode<uint32_t>(node, "offset");
-        auto count = GetSafeNode<uint32_t>(node, "count");
-        auto idx = (ptr - offset) / sizeof(N64Vtx_t);
-
-        SPDLOG_INFO("Replaced Vtx Overlapped: 0x{:X} Symbol: {}", ptr, symbol);
+        SPDLOG_INFO("Replaced Vtx Overlapped: 0x{:X} Symbol: {}", ptr, lookup.symbol);
         gfxd_puts("&");
-        gfxd_puts(symbol.c_str());
+        gfxd_puts(lookup.symbol.c_str());
         gfxd_puts("[");
         gfxd_puts(std::to_string(idx).c_str());
         gfxd_puts("]");
         return 1;
     }
 
-    auto dec = Companion::Instance->GetSafeNodeByAddr(ptr, "VTX");
+    auto dec = Companion::Instance->GetSafeNodeLookupByAddr(ptr, "VTX");
 
     if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found Vtx: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(symbol.c_str());
+        SPDLOG_INFO("Found Vtx: 0x{:X} Symbol: {}", ptr, dec->symbol);
+        gfxd_puts(dec->symbol.c_str());
         return 1;
     }
 
@@ -88,13 +82,11 @@ int Vtx(uint32_t ptr, int32_t num) {
 }
 
 int Texture(uint32_t ptr, int32_t fmt, int32_t siz, int32_t width, int32_t height, int32_t pal) {
-    auto dec = Companion::Instance->GetSafeNodeByAddr(ptr, "TEXTURE");
+    auto dec = Companion::Instance->GetSafeNodeLookupByAddr(ptr, "TEXTURE");
 
     if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found Texture: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(symbol.c_str());
+        SPDLOG_INFO("Found Texture: 0x{:X} Symbol: {}", ptr, dec->symbol);
+        gfxd_puts(dec->symbol.c_str());
         return 1;
     }
 
@@ -103,13 +95,11 @@ int Texture(uint32_t ptr, int32_t fmt, int32_t siz, int32_t width, int32_t heigh
 }
 
 int Palette(uint32_t ptr, int32_t idx, int32_t count) {
-    auto dec = Companion::Instance->GetSafeNodeByAddr(ptr, "TEXTURE");
+    auto dec = Companion::Instance->GetSafeNodeLookupByAddr(ptr, "TEXTURE");
 
     if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found TLUT: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(symbol.c_str());
+        SPDLOG_INFO("Found TLUT: 0x{:X} Symbol: {}", ptr, dec->symbol);
+        gfxd_puts(dec->symbol.c_str());
         return 1;
     }
 
@@ -118,13 +108,11 @@ int Palette(uint32_t ptr, int32_t idx, int32_t count) {
 }
 
 int Lights(uint32_t ptr, int32_t count) {
-    auto dec = Companion::Instance->GetSafeNodeByAddr(ptr, "LIGHTS");
+    auto dec = Companion::Instance->GetSafeNodeLookupByAddr(ptr, "LIGHTS");
 
     if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found Lightsn: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(symbol.c_str());
+        SPDLOG_INFO("Found Lightsn: 0x{:X} Symbol: {}", ptr, dec->symbol);
+        gfxd_puts(dec->symbol.c_str());
         return 1;
     }
 
@@ -133,23 +121,19 @@ int Lights(uint32_t ptr, int32_t count) {
 }
 
 int Light(uint32_t ptr) {
-    auto res = Companion::Instance->GetSafeNodeByAddr(ptr, "LIGHTS");
+    auto res = Companion::Instance->GetSafeNodeLookupByAddr(ptr, "LIGHTS");
 
     if (res.has_value()) {
-        auto node = std::get<1>(res.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found Light A Ptr: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(("&" + symbol + ".a").c_str());
+        SPDLOG_INFO("Found Light A Ptr: 0x{:X} Symbol: {}", ptr, res->symbol);
+        gfxd_puts(("&" + res->symbol + ".a").c_str());
         return 1;
     }
 
-    res = Companion::Instance->GetSafeNodeByAddr(ptr - 0x8, "LIGHTS");
+    res = Companion::Instance->GetSafeNodeLookupByAddr(ptr - 0x8, "LIGHTS");
 
     if (res.has_value()) {
-        auto node = std::get<1>(res.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found Light L Ptr: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(("&" + symbol + ".l").c_str());
+        SPDLOG_INFO("Found Light L Ptr: 0x{:X} Symbol: {}", ptr, res->symbol);
+        gfxd_puts(("&" + res->symbol + ".l").c_str());
         return 1;
     }
 
@@ -158,13 +142,11 @@ int Light(uint32_t ptr) {
 }
 
 int DisplayList(uint32_t ptr) {
-    auto dec = Companion::Instance->GetSafeNodeByAddr(ptr, "GFX");
+    auto dec = Companion::Instance->GetSafeNodeLookupByAddr(ptr, "GFX");
 
     if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found Display List: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(symbol.c_str());
+        SPDLOG_INFO("Found Display List: 0x{:X} Symbol: {}", ptr, dec->symbol);
+        gfxd_puts(dec->symbol.c_str());
         return 1;
     }
 
@@ -173,13 +155,11 @@ int DisplayList(uint32_t ptr) {
 }
 
 int Viewport(uint32_t ptr) {
-    auto dec = Companion::Instance->GetSafeNodeByAddr(ptr, "VP");
+    auto dec = Companion::Instance->GetSafeNodeLookupByAddr(ptr, "VP");
 
     if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found Viewport: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(("&" + symbol).c_str());
+        SPDLOG_INFO("Found Viewport: 0x{:X} Symbol: {}", ptr, dec->symbol);
+        gfxd_puts(("&" + dec->symbol).c_str());
         return 1;
     }
 
@@ -188,13 +168,11 @@ int Viewport(uint32_t ptr) {
 }
 
 int Matrix(uint32_t ptr) {
-    auto dec = Companion::Instance->GetSafeNodeByAddr(ptr, "MTX");
+    auto dec = Companion::Instance->GetSafeNodeLookupByAddr(ptr, "MTX");
 
     if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
-        auto symbol = GetSafeNode<std::string>(node, "symbol");
-        SPDLOG_INFO("Found Matrix: 0x{:X} Symbol: {}", ptr, symbol);
-        gfxd_puts(("&" + symbol).c_str());
+        SPDLOG_INFO("Found Matrix: 0x{:X} Symbol: {}", ptr, dec->symbol);
+        gfxd_puts(("&" + dec->symbol).c_str());
         return 1;
     }
 
@@ -203,7 +181,7 @@ int Matrix(uint32_t ptr) {
 }
 #endif
 
-std::optional<std::tuple<std::string, YAML::Node>> GetVtxOverlap(uint32_t ptr) {
+std::optional<AssetLookup> GetVtxOverlap(uint32_t ptr) {
     if (Torch::contains(mVtxOverlaps, ptr)) {
         SPDLOG_INFO("Found overlap for ptr 0x{:X}", ptr);
         return mVtxOverlaps[ptr];
@@ -214,7 +192,7 @@ std::optional<std::tuple<std::string, YAML::Node>> GetVtxOverlap(uint32_t ptr) {
     return std::nullopt;
 }
 
-void RegisterVTXOverlap(uint32_t ptr, std::tuple<std::string, YAML::Node>& vtx) {
+void RegisterVTXOverlap(uint32_t ptr, const AssetLookup& vtx) {
     mVtxOverlaps[ptr] = vtx;
     SPDLOG_INFO("Register overlap for ptr 0x{:X}", ptr);
 }

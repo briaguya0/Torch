@@ -112,14 +112,15 @@ void FlushDeferred(const std::string& baseName) {
         // Register overlap mappings for all pending addresses within this group.
         // Use the symbol (not the full path) to match existing SearchVtx-based overlaps,
         // since the export path applies RelativePath() which prepends the directory.
-        auto registeredNode = Companion::Instance->GetNodeByAddr(mg.addr);
-        if (registeredNode.has_value()) {
-            auto [fullPath, vtxNode] = registeredNode.value();
-            auto overlapTuple = std::make_tuple(symbol, vtxNode);
+        auto registeredLookup = Companion::Instance->GetNodeLookupByAddr(mg.addr);
+        if (registeredLookup.has_value()) {
+            AssetLookup overlapLookup = registeredLookup.value();
+            overlapLookup.path = symbol;    // Use symbol as path (matches old tuple<symbol, node> behavior)
+            overlapLookup.symbol = symbol;
             for (auto& pv : pending) {
                 uint32_t pvOff = SEGMENT_OFFSET(pv.addr);
                 if (pvOff > startOff && pvOff < mg.endOff) {
-                    GFXDOverride::RegisterVTXOverlap(pv.addr, overlapTuple);
+                    GFXDOverride::RegisterVTXOverlap(pv.addr, overlapLookup);
                 }
             }
         }

@@ -80,7 +80,7 @@ void WriteInstrument(tinyxml2::XMLElement* parent, uint32_t offset) {
         tinyxml2::XMLElement* low = root->InsertNewChildElement("LowNotesSound");
         low->SetAttribute("Tuning", lowSample.tuning);
         low->SetAttribute(
-            "SampleRef", (std::get<std::string>(Companion::Instance->GetNodeByAddr(lowSample.sample).value())).c_str());
+            "SampleRef", (Companion::Instance->GetNodeLookupByAddr(lowSample.sample).value().path).c_str());
 
         root->InsertEndChild(low);
     }
@@ -90,7 +90,7 @@ void WriteInstrument(tinyxml2::XMLElement* parent, uint32_t offset) {
         normal->SetAttribute("Tuning", normSample.tuning);
         normal->SetAttribute(
             "SampleRef",
-            (std::get<std::string>(Companion::Instance->GetNodeByAddr(normSample.sample).value())).c_str());
+            (Companion::Instance->GetNodeLookupByAddr(normSample.sample).value().path).c_str());
 
         root->InsertEndChild(normal);
     }
@@ -100,7 +100,7 @@ void WriteInstrument(tinyxml2::XMLElement* parent, uint32_t offset) {
         high->SetAttribute("Tuning", highSample.tuning);
         high->SetAttribute(
             "SampleRef",
-            (std::get<std::string>(Companion::Instance->GetNodeByAddr(highSample.sample).value())).c_str());
+            (Companion::Instance->GetNodeLookupByAddr(highSample.sample).value().path).c_str());
 
         root->InsertEndChild(high);
     }
@@ -119,7 +119,7 @@ void WriteDrum(tinyxml2::XMLElement* parent, uint32_t offset) {
     root->SetAttribute("Pan", drum->pan);
     root->SetAttribute("Loaded", 0);
     root->SetAttribute("SampleRef",
-                       (std::get<std::string>(Companion::Instance->GetNodeByAddr(sample.sample).value())).c_str());
+                       (Companion::Instance->GetNodeLookupByAddr(sample.sample).value().path).c_str());
     root->SetAttribute("Tuning", sample.tuning);
 
     tinyxml2::XMLElement* envelopes = root->InsertNewChildElement("Envelopes");

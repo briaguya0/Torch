@@ -34,13 +34,9 @@ static uint32_t RemapSegmentedAddr(uint32_t addr, const std::string& expectedTyp
         auto otherBase = Companion::Instance->GetFileOffsetFromSegmentedAddr(otherSeg);
         if (otherBase.has_value() && otherBase.value() == segBase.value()) {
             uint32_t remapped = (otherSeg << 24) | offset;
-            auto node = Companion::Instance->GetNodeByAddr(remapped);
-            if (node.has_value()) {
-                if (!expectedType.empty()) {
-                    auto n = std::get<1>(node.value());
-                    auto nType = GetSafeNode<std::string>(n, "type");
-                    if (nType != expectedType) continue;
-                }
+            auto lookup = Companion::Instance->GetNodeLookupByAddr(remapped);
+            if (lookup.has_value()) {
+                if (!expectedType.empty() && lookup->type != expectedType) continue;
                 return remapped;
             }
         }
@@ -232,7 +228,7 @@ void DebugDisplayList(uint32_t w0, uint32_t w1) {
 }
 #endif
 
-std::optional<std::tuple<std::string, YAML::Node>> SearchVtx(uint32_t ptr) {
+std::optional<AssetLookup> SearchVtx(uint32_t ptr) {
     // Search VTX type, plus OOT:ARRAY when running with OoT minor version
     std::vector<std::string> vtxTypes = {"VTX"};
     if (Companion::Instance->GetGBIMinorVersion() == GBIMinorVersion::OoT) {
@@ -283,7 +279,14 @@ std::optional<std::tuple<std::string, YAML::Node>> SearchVtx(uint32_t ptr) {
             }
 
             if (absPtr > absOffset && absPtr < absOffset + end) {
-                return std::make_tuple(GetSafeNode<std::string>(node, "symbol", name), node);
+                auto sym = GetSafeNode<std::string>(node, "symbol", name);
+                return AssetLookup{
+                    sym,    // Use symbol as path (matches old tuple<symbol, node> behavior)
+                    type,
+                    sym,
+                    offset,
+                    count,
+                };
             }
         }
     }
@@ -414,8 +417,7 @@ ExportResult DListBinaryExporter::Export(std::ostream& write, std::shared_ptr<IP
                 w1 = w1 + 1;
                 SPDLOG_INFO("VTX export: alias segment for 0x{:X}", ptr);
             } else if (auto overlap = GFXDOverride::GetVtxOverlap(ptr); overlap.has_value()) {
-                auto ovnode = std::get<1>(overlap.value());
-                auto path = Companion::Instance->RelativePath(std::get<0>(overlap.value()));
+                auto path = Companion::Instance->RelativePath(overlap->path);
 
                 // Check if the VTX is from a different file than the current DList.
                 // OTRExporter's GetDeclarationRanged returns nullptr for cross-file VTX,
@@ -430,14 +432,12 @@ ExportResult DListBinaryExporter::Export(std::ostream& write, std::shared_ptr<IP
                     uint64_t hash = CRC64(path.c_str());
 
                     if (hash == 0) {
-                        throw std::runtime_error("Vtx hash is 0 for " + std::get<0>(overlap.value()));
+                        throw std::runtime_error("Vtx hash is 0 for " + overlap->path);
                     }
 
                     SPDLOG_INFO("Found vtx: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, path);
 
-                    auto offset = GetSafeNode<uint32_t>(ovnode, "offset");
-                    auto count = GetSafeNode<uint32_t>(ovnode, "count");
-                    auto diff = ASSET_PTR(ptr) - ASSET_PTR(offset);
+                    auto diff = ASSET_PTR(ptr) - ASSET_PTR(overlap->offset);
 
                     N64Gfx value = gsSPVertexOTR(diff, nvtx, didx);
 
@@ -453,13 +453,11 @@ ExportResult DListBinaryExporter::Export(std::ostream& write, std::shared_ptr<IP
                     w1 = hash & 0xFFFFFFFF;
                 }
             } else {
-                auto vtxNode = Companion::Instance->GetNodeByAddr(ptr);
+                auto vtxLookup = Companion::Instance->GetNodeLookupByAddr(ptr);
                 std::optional<std::string> dec = std::nullopt;
-                if (vtxNode.has_value()) {
-                    auto [vpath, vn] = vtxNode.value();
-                    auto vtype = GetSafeNode<std::string>(vn, "type");
-                    if (vtype == "VTX" || vtype == "OOT:ARRAY") {
-                        dec = vpath;
+                if (vtxLookup.has_value()) {
+                    if (vtxLookup->type == "VTX" || vtxLookup->type == "OOT:ARRAY") {
+                        dec = vtxLookup->path;
                     }
                 }
                 if (dec.has_value()) {
@@ -1034,19 +1032,17 @@ std::optional<std::shared_ptr<IParsedData>> DListFactory::parse(std::vector<uint
                     nvtx = (C0(0, 16)) / sizeof(N64Vtx_t);
                     break;
             }
-            const auto decl = Companion::Instance->GetNodeByAddr(w1);
+            const auto decl = Companion::Instance->GetNodeLookupByAddr(w1);
 
             if (!decl.has_value()) {
                 auto adjPtr = Companion::Instance->PatchVirtualAddr(w1);
                 auto search = SearchVtx(adjPtr);
 
                 if (search.has_value()) {
-                    auto [path, vtx] = search.value();
+                    SPDLOG_INFO("Path: {}", search->path);
 
-                    SPDLOG_INFO("Path: {}", path);
-
-                    auto lOffset = GetSafeNode<uint32_t>(vtx, "offset");
-                    auto lCount = GetSafeNode<uint32_t>(vtx, "count");
+                    auto lOffset = search->offset;
+                    auto lCount = search->count;
                     auto lSize = ALIGN16(lCount * sizeof(N64Vtx_t));
 
                     // Compare in absolute ROM address space for cross-segment support
@@ -1063,7 +1059,6 @@ std::optional<std::shared_ptr<IParsedData>> DListFactory::parse(std::vector<uint
 
                     if (absPtr > absOffset && absPtr <= absOffset + lSize) {
                         SPDLOG_INFO("Found vtx at 0x{:X} matching last vtx at 0x{:X}", adjPtr, lOffset);
-                        // Register with the patched address (used by binary exporter lookup)
                         GFXDOverride::RegisterVTXOverlap(adjPtr, search.value());
                     }
                 } else {

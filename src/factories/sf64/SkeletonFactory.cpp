@@ -55,11 +55,9 @@ ExportResult SF64::SkeletonCodeExporter::Export(std::ostream& write, std::shared
         if (limb.mDList == 0) {
             write << "NULL, ";
         } else {
-            auto dec = Companion::Instance->GetNodeByAddr(limb.mDList);
+            auto dec = Companion::Instance->GetNodeLookupByAddr(limb.mDList);
             if (dec.has_value()) {
-                auto node = std::get<1>(dec.value());
-                auto symbol = GetSafeNode<std::string>(node, "symbol");
-                write << symbol << ", ";
+                write << dec->symbol << ", ";
             } else {
                 write << "0x" << std::uppercase << std::hex << limb.mDList << ", ";
             }
@@ -115,11 +113,10 @@ ExportResult SF64::SkeletonBinaryExporter::Export(std::ostream& write, std::shar
         WriteHeader(limbWriter, Torch::ResourceType::Limb, 0);
 
         if (limb.mDList != 0) {
-            auto dec = Companion::Instance->GetNodeByAddr(limb.mDList);
+            auto dec = Companion::Instance->GetNodeLookupByAddr(limb.mDList);
             if (dec.has_value()) {
-                std::string path = std::get<0>(dec.value());
-                limbWriter.Write(CRC64(path.c_str()));
-                SPDLOG_INFO("Found display list: 0x{:X} at {} with size {}", limb.mDList, path, path.size());
+                limbWriter.Write(CRC64(dec->path.c_str()));
+                SPDLOG_INFO("Found display list: 0x{:X} at {} with size {}", limb.mDList, dec->path, dec->path.size());
             } else {
                 SPDLOG_WARN("Could not find dlist at 0x{:X}", limb.mDList);
                 throw std::runtime_error("Could not find dlist at 0x" + std::to_string(limb.mDList));

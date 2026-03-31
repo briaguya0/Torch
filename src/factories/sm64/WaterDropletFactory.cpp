@@ -93,10 +93,9 @@ ExportResult SM64::WaterDropletCodeExporter::Export(std::ostream& write, std::sh
         model << waterDropletData->model;
     }
     std::stringstream bhvSymbol;
-    auto dec = Companion::Instance->GetNodeByAddr(waterDropletData->behavior);
+    auto dec = Companion::Instance->GetNodeLookupByAddr(waterDropletData->behavior);
     if (dec.has_value()) {
-        auto bhvNode = std::get<1>(dec.value());
-        bhvSymbol << GetSafeNode<std::string>(bhvNode, "symbol");
+        bhvSymbol << dec->symbol;
     } else {
         SPDLOG_WARN("Cannot find node for ptr 0x{:X}", waterDropletData->behavior);
         bhvSymbol << std::hex << "0x" << waterDropletData->behavior << std::dec;
@@ -131,10 +130,10 @@ ExportResult SM64::WaterDropletBinaryExporter::Export(std::ostream& write, std::
     writer.Write(waterDropletData->flags);
     writer.Write(waterDropletData->model);
     auto ptr = waterDropletData->behavior;
-    auto dec = Companion::Instance->GetNodeByAddr(ptr);
-    if (dec.has_value()) {
-        uint64_t hash = CRC64(std::get<0>(dec.value()).c_str());
-        SPDLOG_INFO("Found Behavior Script: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(dec.value()));
+    auto dec2 = Companion::Instance->GetNodeLookupByAddr(ptr);
+    if (dec2.has_value()) {
+        uint64_t hash = CRC64(dec2->path.c_str());
+        SPDLOG_INFO("Found Behavior Script: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, dec2->path);
         writer.Write(hash);
     } else {
         SPDLOG_WARN("Could not find Behavior Script at 0x{:X}", ptr);

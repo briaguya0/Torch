@@ -34,11 +34,9 @@ ExportResult SM64::MovtexQuadCodeExporter::Export(std::ostream& write, std::shar
         if (quad.second == 0) {
             write << "NULL";
         } else {
-            auto dec = Companion::Instance->GetNodeByAddr(quad.second);
+            auto dec = Companion::Instance->GetNodeLookupByAddr(quad.second);
             if (dec.has_value()) {
-                auto movtexNode = std::get<1>(dec.value());
-                auto movtexSymbol = GetSafeNode<std::string>(movtexNode, "symbol");
-                write << movtexSymbol;
+                write << dec->symbol;
             } else {
                 SPDLOG_WARN("Could not find movtex at 0x{:X}", quad.second);
                 write << "0x" << std::hex << std::uppercase << quad.second << std::nouppercase << std::dec;
@@ -70,10 +68,10 @@ ExportResult SM64::MovtexQuadBinaryExporter::Export(std::ostream& write, std::sh
         if (quad.second == 0) {
             writer.Write((uint64_t)quad.second);
         } else {
-            auto dec = Companion::Instance->GetNodeByAddr(quad.second);
+            auto dec = Companion::Instance->GetNodeLookupByAddr(quad.second);
             if (dec.has_value()) {
-                uint64_t hash = CRC64(std::get<0>(dec.value()).c_str());
-                SPDLOG_INFO("Found movtex: 0x{:X} Hash: 0x{:X} Path: {}", quad.second, hash, std::get<0>(dec.value()));
+                uint64_t hash = CRC64(dec->path.c_str());
+                SPDLOG_INFO("Found movtex: 0x{:X} Hash: 0x{:X} Path: {}", quad.second, hash, dec->path);
                 writer.Write(hash);
             } else {
                 SPDLOG_WARN("Could not find movtex at 0x{:X}", quad.second);

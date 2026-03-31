@@ -83,11 +83,10 @@ uint64_t AudioContext::GetPathByAddr(uint32_t addr) {
         return 0;
     }
 
-    auto dec = Companion::Instance->GetNodeByAddr(addr);
+    auto dec = Companion::Instance->GetNodeLookupByAddr(addr);
     if (dec.has_value()) {
-        std::string path = std::get<0>(dec.value());
-        uint64_t hash = CRC64(path.c_str());
-        SPDLOG_INFO("Found path of 0x{:X} {}", addr, path);
+        uint64_t hash = CRC64(dec->path.c_str());
+        SPDLOG_INFO("Found path of 0x{:X} {}", addr, dec->path);
         return hash;
     } else {
         SPDLOG_INFO("Failed to find path for 0x{:X}", addr);

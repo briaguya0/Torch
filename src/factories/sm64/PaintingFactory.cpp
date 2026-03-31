@@ -40,10 +40,9 @@ ExportResult SM64::PaintingCodeExporter::Export(std::ostream& write, std::shared
 
     std::stringstream nDLSymbol;
     {
-        auto dec = Companion::Instance->GetNodeByAddr(painting->normalDisplayList);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(painting->normalDisplayList);
         if (dec.has_value()) {
-            auto nDLNode = std::get<1>(dec.value());
-            nDLSymbol << GetSafeNode<std::string>(nDLNode, "symbol");
+            nDLSymbol << dec->symbol;
         } else {
             SPDLOG_WARN("Cannot find node for ptr 0x{:X}", painting->normalDisplayList);
             nDLSymbol << std::hex << "0x" << painting->normalDisplayList << std::dec;
@@ -52,10 +51,9 @@ ExportResult SM64::PaintingCodeExporter::Export(std::ostream& write, std::shared
 
     std::stringstream tMapSymbol;
     {
-        auto dec = Companion::Instance->GetNodeByAddr(painting->textureMaps);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(painting->textureMaps);
         if (dec.has_value()) {
-            auto tMapNode = std::get<1>(dec.value());
-            tMapSymbol << GetSafeNode<std::string>(tMapNode, "symbol");
+            tMapSymbol << dec->symbol;
         } else {
             SPDLOG_WARN("Cannot find node for ptr 0x{:X}", painting->textureMaps);
             tMapSymbol << std::hex << "0x" << painting->textureMaps << std::dec;
@@ -64,10 +62,9 @@ ExportResult SM64::PaintingCodeExporter::Export(std::ostream& write, std::shared
 
     std::stringstream tArrSymbol;
     {
-        auto dec = Companion::Instance->GetNodeByAddr(painting->textureArray);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(painting->textureArray);
         if (dec.has_value()) {
-            auto tMapNode = std::get<1>(dec.value());
-            tArrSymbol << GetSafeNode<std::string>(tMapNode, "symbol");
+            tArrSymbol << dec->symbol;
         } else {
             SPDLOG_WARN("Cannot find node for ptr 0x{:X}", painting->textureArray);
             tArrSymbol << std::hex << "0x" << painting->textureArray << std::dec;
@@ -76,10 +73,9 @@ ExportResult SM64::PaintingCodeExporter::Export(std::ostream& write, std::shared
 
     std::stringstream rDLSymbol;
     {
-        auto dec = Companion::Instance->GetNodeByAddr(painting->rippleDisplayList);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(painting->rippleDisplayList);
         if (dec.has_value()) {
-            auto rDLNode = std::get<1>(dec.value());
-            rDLSymbol << GetSafeNode<std::string>(rDLNode, "symbol");
+            rDLSymbol << dec->symbol;
         } else {
             SPDLOG_WARN("Cannot find node for ptr 0x{:X}", painting->rippleDisplayList);
             rDLSymbol << std::hex << "0x" << painting->rippleDisplayList << std::dec;
@@ -171,10 +167,10 @@ ExportResult SM64::PaintingBinaryExporter::Export(std::ostream& write, std::shar
 
     ptr = painting->normalDisplayList;
     {
-        auto dec = Companion::Instance->GetNodeByAddr(ptr);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(ptr);
         if (dec.has_value()) {
-            uint64_t hash = CRC64(std::get<0>(dec.value()).c_str());
-            SPDLOG_INFO("Found DisplayList: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(dec.value()));
+            uint64_t hash = CRC64(dec->path.c_str());
+            SPDLOG_INFO("Found DisplayList: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, dec->path);
             writer.Write(hash);
         } else {
             SPDLOG_WARN("Could not find DisplayList at 0x{:X}", ptr);
@@ -184,10 +180,10 @@ ExportResult SM64::PaintingBinaryExporter::Export(std::ostream& write, std::shar
 
     ptr = painting->textureMaps;
     {
-        auto dec = Companion::Instance->GetNodeByAddr(ptr);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(ptr);
         if (dec.has_value()) {
-            uint64_t hash = CRC64(std::get<0>(dec.value()).c_str());
-            SPDLOG_INFO("Found Texture Maps: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(dec.value()));
+            uint64_t hash = CRC64(dec->path.c_str());
+            SPDLOG_INFO("Found Texture Maps: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, dec->path);
             writer.Write(hash);
         } else {
             SPDLOG_WARN("Could not find Texture Maps at 0x{:X}", ptr);
@@ -197,10 +193,10 @@ ExportResult SM64::PaintingBinaryExporter::Export(std::ostream& write, std::shar
 
     ptr = painting->textureArray;
     {
-        auto dec = Companion::Instance->GetNodeByAddr(ptr);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(ptr);
         if (dec.has_value()) {
-            uint64_t hash = CRC64(std::get<0>(dec.value()).c_str());
-            SPDLOG_INFO("Found Texture Arrays: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(dec.value()));
+            uint64_t hash = CRC64(dec->path.c_str());
+            SPDLOG_INFO("Found Texture Arrays: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, dec->path);
             writer.Write(hash);
         } else {
             SPDLOG_WARN("Could not find Texture Arrays at 0x{:X}", ptr);
@@ -213,10 +209,10 @@ ExportResult SM64::PaintingBinaryExporter::Export(std::ostream& write, std::shar
 
     ptr = painting->rippleDisplayList;
     {
-        auto dec = Companion::Instance->GetNodeByAddr(ptr);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(ptr);
         if (dec.has_value()) {
-            uint64_t hash = CRC64(std::get<0>(dec.value()).c_str());
-            SPDLOG_INFO("Found DisplayList: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(dec.value()));
+            uint64_t hash = CRC64(dec->path.c_str());
+            SPDLOG_INFO("Found DisplayList: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, dec->path);
             writer.Write(hash);
         } else {
             SPDLOG_WARN("Could not find DisplayList at 0x{:X}", ptr);

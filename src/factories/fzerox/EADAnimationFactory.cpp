@@ -34,11 +34,9 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
     if (anim->mScaleData == 0) {
         write << "NULL, ";
     } else {
-        auto dec = Companion::Instance->GetNodeByAddr(anim->mScaleData);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(anim->mScaleData);
         if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
-            auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
-            write << assetSymbol << ", ";
+            write << dec->symbol << ", ";
         } else {
             write << FORMAT_HEX(anim->mScaleData) << ", ";
         }
@@ -46,11 +44,9 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
     if (anim->mScaleInfo == 0) {
         write << "NULL, ";
     } else {
-        auto dec = Companion::Instance->GetNodeByAddr(anim->mScaleInfo);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(anim->mScaleInfo);
         if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
-            auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
-            write << assetSymbol << ", ";
+            write << dec->symbol << ", ";
         } else {
             write << FORMAT_HEX(anim->mScaleInfo) << ", ";
         }
@@ -58,11 +54,9 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
     if (anim->mRotationData == 0) {
         write << "NULL, ";
     } else {
-        auto dec = Companion::Instance->GetNodeByAddr(anim->mRotationData);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(anim->mRotationData);
         if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
-            auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
-            write << assetSymbol << ", ";
+            write << dec->symbol << ", ";
         } else {
             write << FORMAT_HEX(anim->mRotationData) << ", ";
         }
@@ -70,11 +64,9 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
     if (anim->mRotationInfo == 0) {
         write << "NULL, ";
     } else {
-        auto dec = Companion::Instance->GetNodeByAddr(anim->mRotationInfo);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(anim->mRotationInfo);
         if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
-            auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
-            write << assetSymbol << ", ";
+            write << dec->symbol << ", ";
         } else {
             write << FORMAT_HEX(anim->mRotationInfo) << ", ";
         }
@@ -82,11 +74,9 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
     if (anim->mPositionData == 0) {
         write << "NULL,";
     } else {
-        auto dec = Companion::Instance->GetNodeByAddr(anim->mPositionData);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(anim->mPositionData);
         if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
-            auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
-            write << assetSymbol << ",";
+            write << dec->symbol << ",";
         } else {
             write << FORMAT_HEX(anim->mPositionData) << ",";
         }
@@ -94,11 +84,9 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
     if (anim->mPositionInfo == 0) {
         write << "NULL, ";
     } else {
-        auto dec = Companion::Instance->GetNodeByAddr(anim->mPositionInfo);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(anim->mPositionInfo);
         if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
-            auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
-            write << assetSymbol << ", ";
+            write << dec->symbol << ", ";
         } else {
             write << FORMAT_HEX(anim->mPositionInfo) << ", ";
         }

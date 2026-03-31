@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
+#include "AssetLookup.h"
 #include "factories/BaseFactory.h"
 #include "n64/Cartridge.h"
 #include "utils/Decompressor.h"
@@ -172,8 +173,10 @@ public:
     std::optional<std::shared_ptr<BaseFactory>> GetFactory(const std::string& type);
     uint32_t PatchVirtualAddr(uint32_t addr);
     std::optional<std::tuple<std::string, YAML::Node>> GetNodeByAddr(uint32_t addr);
+    std::optional<AssetLookup> GetNodeLookupByAddr(uint32_t addr);
     std::optional<std::string> GetStringByAddr(uint32_t addr);
     std::optional<std::tuple<std::string, YAML::Node>> GetSafeNodeByAddr(const uint32_t addr, std::string type);
+    std::optional<AssetLookup> GetSafeNodeLookupByAddr(const uint32_t addr, std::string type);
     std::optional<std::string> GetSafeStringByAddr(const uint32_t addr, std::string type);
     std::optional<std::vector<std::tuple<std::string, YAML::Node>>> GetNodesByType(const std::string& type);
     std::string GetSymbolFromAddr(uint32_t addr, bool validZero = false);

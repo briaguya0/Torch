@@ -34,12 +34,11 @@ ExportResult SF64::MessageLookupCodeExporter::Export(std::ostream& write, std::s
             write << "\n" << fourSpaceTab;
         }
 
-        auto dec = Companion::Instance->GetNodeByAddr(m.ptr);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(m.ptr);
         std::string msgSymbol = "NULL";
 
         if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
-            msgSymbol = GetSafeNode<std::string>(node, "symbol");
+            msgSymbol = dec->symbol;
         }
 
         write << "{ " << m.id << std::dec << ", " << msgSymbol << " }, ";
@@ -64,11 +63,11 @@ ExportResult SF64::MessageLookupXMLExporter::Export(std::ostream& write, std::sh
 
     for (auto m : table) {
         auto item = lookup.NewElement("Entry");
-        auto dec = Companion::Instance->GetNodeByAddr(m.ptr);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(m.ptr);
         std::string ref = "None";
 
         if (dec.has_value()) {
-            ref = std::get<0>(dec.value());
+            ref = dec->path;
         }
 
         item->SetAttribute("Ref", ref.c_str());
@@ -94,11 +93,10 @@ ExportResult SF64::MessageLookupBinaryExporter::Export(std::ostream& write, std:
     writer.Write(static_cast<uint32_t>(count));
     for (auto m : data->mTable) {
         writer.Write(m.id);
-        auto dec = Companion::Instance->GetNodeByAddr(m.ptr);
+        auto dec = Companion::Instance->GetNodeLookupByAddr(m.ptr);
         if (dec.has_value()) {
-            std::string path = std::get<0>(dec.value());
-            SPDLOG_INFO("Message ID: {} Ptr: {:X} Path: {}", m.id, m.ptr, path);
-            writer.Write(CRC64(path.c_str()));
+            SPDLOG_INFO("Message ID: {} Ptr: {:X} Path: {}", m.id, m.ptr, dec->path);
+            writer.Write(CRC64(dec->path.c_str()));
         } else {
             writer.Write((uint64_t)0);
             SPDLOG_WARN("Failed to find message ID: {} Ptr: {:X}", m.id, m.ptr);

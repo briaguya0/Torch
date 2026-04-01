@@ -35,8 +35,8 @@ ExportResult FZX::EADLimbCodeExporter::Export(std::ostream& write, std::shared_p
         write << "NULL,\n";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(limb->mDl);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << assetSymbol << ",\n";
         } else {
@@ -53,8 +53,8 @@ ExportResult FZX::EADLimbCodeExporter::Export(std::ostream& write, std::shared_p
         write << "NULL,\n";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(limb->mNextLimb);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << "&" << assetSymbol << ",\n";
         } else {
@@ -67,8 +67,8 @@ ExportResult FZX::EADLimbCodeExporter::Export(std::ostream& write, std::shared_p
         write << "NULL,\n";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(limb->mChildLimb);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << "&" << assetSymbol << ",\n";
         } else {
@@ -81,8 +81,8 @@ ExportResult FZX::EADLimbCodeExporter::Export(std::ostream& write, std::shared_p
         write << "NULL,\n";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(limb->mAssociatedLimb);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << "&" << assetSymbol << ",\n";
         } else {
@@ -95,8 +95,8 @@ ExportResult FZX::EADLimbCodeExporter::Export(std::ostream& write, std::shared_p
         write << "NULL,\n";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(limb->mAssociatedLimbDL);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << assetSymbol << ",\n";
         } else {

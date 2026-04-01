@@ -120,8 +120,8 @@ ExportResult SM64::GeoCodeExporter::Export(std::ostream& write, std::shared_ptr<
                     auto dec = Companion::Instance->GetNodeByAddr(ptr);
                     std::string symbol = "NULL";
 
-                    if (dec.has_value()) {
-                        auto node = std::get<1>(dec.value());
+                    if (dec != nullptr) {
+                        auto node = std::get<1>(*dec);
                         symbol = GetSafeNode<std::string>(node, "symbol");
                         write << symbol;
                     } else if (ptr == 0) {
@@ -234,9 +234,9 @@ ExportResult SM64::GeoBinaryExporter::Export(std::ostream& write, std::shared_pt
                     auto dec = Companion::Instance->GetNodeByAddr(ptr);
                     if (ptr == 0) {
                         writer.Write((uint64_t)0);
-                    } else if (dec.has_value()) {
-                        uint64_t hash = CRC64(std::get<0>(dec.value()).c_str());
-                        SPDLOG_INFO("Found Asset: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(dec.value()));
+                    } else if (dec != nullptr) {
+                        uint64_t hash = CRC64(std::get<0>(*dec).c_str());
+                        SPDLOG_INFO("Found Asset: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(*dec));
                         writer.Write(hash);
                     } else {
                         SPDLOG_WARN("Could not find Asset at 0x{:X}", ptr);

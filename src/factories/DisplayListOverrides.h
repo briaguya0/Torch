@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DisplayListFactory.h"
+#include "Companion.h"
 #include <yaml-cpp/yaml.h>
 #include <cstdint>
 #include <tuple>
@@ -49,7 +50,7 @@ int  DisplayList(uint32_t dl);
 int  Viewport(uint32_t vp);
 int  Matrix(uint32_t mtx);
 #endif
-void RegisterVTXOverlap(uint32_t ptr, std::tuple<std::string, YAML::Node>& vtx);
-std::optional<std::tuple<std::string, YAML::Node>> GetVtxOverlap(uint32_t ptr);
+void RegisterVTXOverlap(uint32_t ptr, const AddrEntry& vtx);
+AddrEntry* GetVtxOverlap(uint32_t ptr);
 void ClearVtx();
 };

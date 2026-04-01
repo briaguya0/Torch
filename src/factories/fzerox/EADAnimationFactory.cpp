@@ -35,8 +35,8 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
         write << "NULL, ";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(anim->mScaleData);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << assetSymbol << ", ";
         } else {
@@ -47,8 +47,8 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
         write << "NULL, ";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(anim->mScaleInfo);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << assetSymbol << ", ";
         } else {
@@ -59,8 +59,8 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
         write << "NULL, ";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(anim->mRotationData);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << assetSymbol << ", ";
         } else {
@@ -71,8 +71,8 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
         write << "NULL, ";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(anim->mRotationInfo);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << assetSymbol << ", ";
         } else {
@@ -83,8 +83,8 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
         write << "NULL,";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(anim->mPositionData);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << assetSymbol << ",";
         } else {
@@ -95,8 +95,8 @@ ExportResult FZX::EADAnimationCodeExporter::Export(std::ostream& write, std::sha
         write << "NULL, ";
     } else {
         auto dec = Companion::Instance->GetNodeByAddr(anim->mPositionInfo);
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             auto assetSymbol = GetSafeNode<std::string>(node, "symbol");
             write << assetSymbol << ", ";
         } else {

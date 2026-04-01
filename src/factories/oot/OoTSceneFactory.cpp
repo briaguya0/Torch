@@ -859,7 +859,7 @@ std::optional<std::shared_ptr<IParsedData>> OoTSceneFactory::parse(std::vector<u
     // Save/restore DeferredVtx state so child processing doesn't corrupt ours.
     for (auto& alt : pendingAltHeaders) {
         auto existing = Companion::Instance->GetNodeByAddr(alt.seg);
-        if (!existing.has_value()) {
+        if (existing == nullptr) {
             auto savedVtx = DeferredVtx::IsDeferred()
                 ? DeferredVtx::SaveAndClearPending()
                 : std::vector<DeferredVtx::PendingVtx>{};

@@ -37,8 +37,8 @@ ExportResult SF64::MessageLookupCodeExporter::Export(std::ostream& write, std::s
         auto dec = Companion::Instance->GetNodeByAddr(m.ptr);
         std::string msgSymbol = "NULL";
 
-        if (dec.has_value()) {
-            auto node = std::get<1>(dec.value());
+        if (dec != nullptr) {
+            auto node = std::get<1>(*dec);
             msgSymbol = GetSafeNode<std::string>(node, "symbol");
         }
 
@@ -67,8 +67,8 @@ ExportResult SF64::MessageLookupXMLExporter::Export(std::ostream& write, std::sh
         auto dec = Companion::Instance->GetNodeByAddr(m.ptr);
         std::string ref = "None";
 
-        if (dec.has_value()) {
-            ref = std::get<0>(dec.value());
+        if (dec != nullptr) {
+            ref = std::get<0>(*dec);
         }
 
         item->SetAttribute("Ref", ref.c_str());
@@ -95,8 +95,8 @@ ExportResult SF64::MessageLookupBinaryExporter::Export(std::ostream& write, std:
     for (auto m : data->mTable) {
         writer.Write(m.id);
         auto dec = Companion::Instance->GetNodeByAddr(m.ptr);
-        if (dec.has_value()) {
-            std::string path = std::get<0>(dec.value());
+        if (dec != nullptr) {
+            std::string path = std::get<0>(*dec);
             SPDLOG_INFO("Message ID: {} Ptr: {:X} Path: {}", m.id, m.ptr, path);
             writer.Write(CRC64(path.c_str()));
         } else {

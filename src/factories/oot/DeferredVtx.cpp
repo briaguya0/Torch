@@ -113,8 +113,8 @@ void FlushDeferred(const std::string& baseName) {
         // Use the symbol (not the full path) to match existing SearchVtx-based overlaps,
         // since the export path applies RelativePath() which prepends the directory.
         auto registeredNode = Companion::Instance->GetNodeByAddr(mg.addr);
-        if (registeredNode.has_value()) {
-            auto [fullPath, vtxNode] = registeredNode.value();
+        if (registeredNode != nullptr) {
+            auto& [fullPath, vtxNode] = *registeredNode;
             auto overlapTuple = std::make_tuple(symbol, vtxNode);
             for (auto& pv : pending) {
                 uint32_t pvOff = SEGMENT_OFFSET(pv.addr);

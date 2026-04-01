@@ -102,8 +102,8 @@ ExportResult SM64::LevelScriptCodeExporter::Export(std::ostream& write, std::sha
 
                     if (ptr == 0) {
                         write << symbol;
-                    } else if (dec.has_value()) {
-                        auto node = std::get<1>(dec.value());
+                    } else if (dec != nullptr) {
+                        auto node = std::get<1>(*dec);
                         symbol = GetSafeNode<std::string>(node, "symbol");
                         write << symbol;
                     } else {
@@ -175,9 +175,9 @@ ExportResult SM64::LevelScriptBinaryExporter::Export(std::ostream& write, std::s
                     auto dec = Companion::Instance->GetNodeByAddr(ptr);
                     if (ptr == 0) {
                         writer.Write(ptr);
-                    } else if (dec.has_value()) {
-                        uint64_t hash = CRC64(std::get<0>(dec.value()).c_str());
-                        SPDLOG_INFO("Found Asset: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(dec.value()));
+                    } else if (dec != nullptr) {
+                        uint64_t hash = CRC64(std::get<0>(*dec).c_str());
+                        SPDLOG_INFO("Found Asset: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, std::get<0>(*dec));
                         writer.Write(hash);
                     } else {
                         SPDLOG_WARN("Could not find Asset at 0x{:X}", ptr);

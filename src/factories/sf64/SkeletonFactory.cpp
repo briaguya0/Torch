@@ -56,8 +56,8 @@ ExportResult SF64::SkeletonCodeExporter::Export(std::ostream& write, std::shared
             write << "NULL, ";
         } else {
             auto dec = Companion::Instance->GetNodeByAddr(limb.mDList);
-            if (dec.has_value()) {
-                auto node = std::get<1>(dec.value());
+            if (dec != nullptr) {
+                auto node = std::get<1>(*dec);
                 auto symbol = GetSafeNode<std::string>(node, "symbol");
                 write << symbol << ", ";
             } else {
@@ -116,8 +116,8 @@ ExportResult SF64::SkeletonBinaryExporter::Export(std::ostream& write, std::shar
 
         if (limb.mDList != 0) {
             auto dec = Companion::Instance->GetNodeByAddr(limb.mDList);
-            if (dec.has_value()) {
-                std::string path = std::get<0>(dec.value());
+            if (dec != nullptr) {
+                std::string path = std::get<0>(*dec);
                 limbWriter.Write(CRC64(path.c_str()));
                 SPDLOG_INFO("Found display list: 0x{:X} at {} with size {}", limb.mDList, path, path.size());
             } else {

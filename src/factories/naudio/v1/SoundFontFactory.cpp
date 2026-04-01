@@ -79,8 +79,9 @@ void WriteInstrument(tinyxml2::XMLElement* parent, uint32_t offset) {
     if (lowSample.sample != 0 && lowSample.tuning != 0.0f) {
         tinyxml2::XMLElement* low = root->InsertNewChildElement("LowNotesSound");
         low->SetAttribute("Tuning", lowSample.tuning);
-        low->SetAttribute(
-            "SampleRef", (std::get<std::string>(Companion::Instance->GetNodeByAddr(lowSample.sample).value())).c_str());
+        auto lowNode = Companion::Instance->GetNodeByAddr(lowSample.sample);
+        if (!lowNode) throw std::runtime_error("Could not find sample at " + std::to_string(lowSample.sample));
+        low->SetAttribute("SampleRef", (std::get<std::string>(*lowNode)).c_str());
 
         root->InsertEndChild(low);
     }
@@ -88,9 +89,9 @@ void WriteInstrument(tinyxml2::XMLElement* parent, uint32_t offset) {
     if (normSample.sample != 0 && normSample.tuning != 0.0f) {
         tinyxml2::XMLElement* normal = root->InsertNewChildElement("NormalNotesSound");
         normal->SetAttribute("Tuning", normSample.tuning);
-        normal->SetAttribute(
-            "SampleRef",
-            (std::get<std::string>(Companion::Instance->GetNodeByAddr(normSample.sample).value())).c_str());
+        auto normNode = Companion::Instance->GetNodeByAddr(normSample.sample);
+        if (!normNode) throw std::runtime_error("Could not find sample at " + std::to_string(normSample.sample));
+        normal->SetAttribute("SampleRef", (std::get<std::string>(*normNode)).c_str());
 
         root->InsertEndChild(normal);
     }
@@ -98,9 +99,9 @@ void WriteInstrument(tinyxml2::XMLElement* parent, uint32_t offset) {
     if (highSample.sample != 0 && highSample.tuning != 0.0f) {
         tinyxml2::XMLElement* high = root->InsertNewChildElement("HighNotesSound");
         high->SetAttribute("Tuning", highSample.tuning);
-        high->SetAttribute(
-            "SampleRef",
-            (std::get<std::string>(Companion::Instance->GetNodeByAddr(highSample.sample).value())).c_str());
+        auto highNode = Companion::Instance->GetNodeByAddr(highSample.sample);
+        if (!highNode) throw std::runtime_error("Could not find sample at " + std::to_string(highSample.sample));
+        high->SetAttribute("SampleRef", (std::get<std::string>(*highNode)).c_str());
 
         root->InsertEndChild(high);
     }
@@ -118,8 +119,9 @@ void WriteDrum(tinyxml2::XMLElement* parent, uint32_t offset) {
     root->SetAttribute("ReleaseRate", drum->adsrDecayIndex);
     root->SetAttribute("Pan", drum->pan);
     root->SetAttribute("Loaded", 0);
-    root->SetAttribute("SampleRef",
-                       (std::get<std::string>(Companion::Instance->GetNodeByAddr(sample.sample).value())).c_str());
+    auto drumSampleNode = Companion::Instance->GetNodeByAddr(sample.sample);
+    if (!drumSampleNode) throw std::runtime_error("Could not find sample at " + std::to_string(sample.sample));
+    root->SetAttribute("SampleRef", (std::get<std::string>(*drumSampleNode)).c_str());
     root->SetAttribute("Tuning", sample.tuning);
 
     tinyxml2::XMLElement* envelopes = root->InsertNewChildElement("Envelopes");

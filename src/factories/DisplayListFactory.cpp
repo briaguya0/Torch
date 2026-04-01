@@ -35,9 +35,9 @@ static uint32_t RemapSegmentedAddr(uint32_t addr, const std::string& expectedTyp
         if (otherBase.has_value() && otherBase.value() == segBase.value()) {
             uint32_t remapped = (otherSeg << 24) | offset;
             auto node = Companion::Instance->GetNodeByAddr(remapped);
-            if (node.has_value()) {
+            if (node != nullptr) {
                 if (!expectedType.empty()) {
-                    auto n = std::get<1>(node.value());
+                    auto n = std::get<1>(*node);
                     auto nType = GetSafeNode<std::string>(n, "type");
                     if (nType != expectedType) continue;
                 }
@@ -253,12 +253,12 @@ std::optional<std::tuple<std::string, YAML::Node>> SearchVtx(uint32_t ptr) {
     for (const auto& type : vtxTypes) {
         auto decs = Companion::Instance->GetNodesByType(type);
 
-        if (!decs.has_value()) {
+        if (decs.empty()) {
             continue;
         }
 
-        for (auto& dec : decs.value()) {
-            auto [name, node] = dec;
+        for (auto dec : decs) {
+            auto& [name, node] = *dec;
 
             // For OOT:ARRAY, only match VTX array_type
             if (type == "OOT:ARRAY") {
@@ -325,8 +325,9 @@ ExportResult DListBinaryExporter::Export(std::ostream& write, std::shared_ptr<IP
             // but doesn't exist in OTRExporter. We want the texture/blob that covers this range.
             for (const auto& type : std::vector<std::string>{"TEXTURE", "BLOB"}) {
                 auto decs = Companion::Instance->GetNodesByType(type);
-                if (!decs.has_value()) continue;
-                for (auto& [name, dnode] : decs.value()) {
+                if (decs.empty()) continue;
+                for (auto dptr : decs) {
+                    auto& [name, dnode] = *dptr;
                     auto doffset = GetSafeNode<uint32_t>(dnode, "offset");
                     uint32_t dsize = 0;
                     if (type == "TEXTURE") {
@@ -413,9 +414,9 @@ ExportResult DListBinaryExporter::Export(std::ostream& write, std::shared_ptr<IP
                 // Preserves segment bits in w1.
                 w1 = w1 + 1;
                 SPDLOG_INFO("VTX export: alias segment for 0x{:X}", ptr);
-            } else if (auto overlap = GFXDOverride::GetVtxOverlap(ptr); overlap.has_value()) {
-                auto ovnode = std::get<1>(overlap.value());
-                auto path = Companion::Instance->RelativePath(std::get<0>(overlap.value()));
+            } else if (auto overlap = GFXDOverride::GetVtxOverlap(ptr); overlap != nullptr) {
+                auto ovnode = std::get<1>(*overlap);
+                auto path = Companion::Instance->RelativePath(std::get<0>(*overlap));
 
                 // Check if the VTX is from a different file than the current DList.
                 // OTRExporter's GetDeclarationRanged returns nullptr for cross-file VTX,
@@ -430,7 +431,7 @@ ExportResult DListBinaryExporter::Export(std::ostream& write, std::shared_ptr<IP
                     uint64_t hash = CRC64(path.c_str());
 
                     if (hash == 0) {
-                        throw std::runtime_error("Vtx hash is 0 for " + std::get<0>(overlap.value()));
+                        throw std::runtime_error("Vtx hash is 0 for " + std::get<0>(*overlap));
                     }
 
                     SPDLOG_INFO("Found vtx: 0x{:X} Hash: 0x{:X} Path: {}", ptr, hash, path);
@@ -455,8 +456,8 @@ ExportResult DListBinaryExporter::Export(std::ostream& write, std::shared_ptr<IP
             } else {
                 auto vtxNode = Companion::Instance->GetNodeByAddr(ptr);
                 std::optional<std::string> dec = std::nullopt;
-                if (vtxNode.has_value()) {
-                    auto [vpath, vn] = vtxNode.value();
+                if (vtxNode != nullptr) {
+                    auto& [vpath, vn] = *vtxNode;
                     auto vtype = GetSafeNode<std::string>(vn, "type");
                     if (vtype == "VTX" || vtype == "OOT:ARRAY") {
                         dec = vpath;
@@ -932,7 +933,7 @@ std::optional<std::shared_ptr<IParsedData>> DListFactory::parse(std::vector<uint
         if (opcode == GBI(G_RDPHALF_1)) {
             if (IS_SEGMENTED(w1) && SEGMENT_NUMBER(w1) == SEGMENT_NUMBER(node["offset"].as<uint32_t>())) {
                 const auto decl = Companion::Instance->GetNodeByAddr(w1);
-                if (!decl.has_value()) {
+                if (decl == nullptr) {
                     auto parentSymbol = GetSafeNode<std::string>(node, "symbol", "");
                     auto dlPos = parentSymbol.rfind("DL_");
                     if (dlPos != std::string::npos) {
@@ -1007,7 +1008,7 @@ std::optional<std::shared_ptr<IParsedData>> DListFactory::parse(std::vector<uint
         if (opcode == GBI(G_MTX)) {
             if (IS_SEGMENTED(w1) && SEGMENT_NUMBER(w1) == SEGMENT_NUMBER(node["offset"].as<uint32_t>())) {
                 const auto decl = Companion::Instance->GetNodeByAddr(w1);
-                if (!decl.has_value()) {
+                if (decl == nullptr) {
                     auto parentSymbol = GetSafeNode<std::string>(node, "symbol", "");
 
                     YAML::Node mtxNode;
@@ -1036,7 +1037,7 @@ std::optional<std::shared_ptr<IParsedData>> DListFactory::parse(std::vector<uint
             }
             const auto decl = Companion::Instance->GetNodeByAddr(w1);
 
-            if (!decl.has_value()) {
+            if (decl == nullptr) {
                 auto adjPtr = Companion::Instance->PatchVirtualAddr(w1);
                 auto search = SearchVtx(adjPtr);
 

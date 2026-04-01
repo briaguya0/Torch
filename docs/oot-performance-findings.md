@@ -123,6 +123,67 @@ that live for the entire run. Torch creates and destroys YAML nodes constantly:
 - Double YAML load per file (line 758 reloads the file)
 - Factory parse methods receive YAML::Node& and access it repeatedly
 
+## Experiment 2: Pointer returns from gAddrMap (branch: pointer-returns-experiment)
+
+### Hypothesis
+The perf profile showed ~60% page faults attributed to YAML::Node shared_ptr ref counting.
+Returning `AddrEntry*` (pointers into gAddrMap) instead of `optional<tuple<string, YAML::Node>>`
+would eliminate copies and reduce allocations.
+
+### Implementation
+Changed 3 core functions and 68 call sites across 20 files:
+- `GetNodeByAddr` → returns `AddrEntry*` (was `optional<tuple<...>>`)
+- `GetSafeNodeByAddr` → returns `AddrEntry*`
+- `GetNodesByType` → returns `vector<AddrEntry*>` (was `optional<vector<tuple<...>>>`)
+- `GetVtxOverlap` → returns `AddrEntry*`
+- All callers migrated: `.has_value()` → `!= nullptr`, `.value()` → `*ptr`
+
+Safe because `unordered_map` guarantees pointer stability on insertion.
+
+### Result
+**No improvement.** 34,986ms vs 35,345ms baseline (within noise).
+
+### Why it didn't help
+Re-profiling confirmed: torch user code is only **~3%** of total runtime.
+The page faults are NOT from YAML::Node ref-count copies — they're from
+**anonymous page allocation** in the kernel (`do_anonymous_page`, `folio_add_lru`).
+
+The real breakdown:
+| % | Location | What |
+|---|----------|------|
+| ~60% | kernel (page faults) | `lock_vma_under_rcu`, `do_anonymous_page`, `folio_add_lru` |
+| ~28% | libc (memset/memcpy) | Memory zeroing for new pages |
+| ~1% | tdefl_compress | ZIP compression |
+| ~0.3% | shared_ptr::_M_release | Ref counting (the supposed bottleneck) |
+| ~3% | all other torch code | Actual computation |
+
+The page faults are triggered by the **total memory footprint** — millions of small heap
+allocations (YAML nodes, hashmap buckets, strings, vectors) each faulting in fresh 4KB pages.
+Eliminating copies doesn't reduce the total allocation count; the same pages still get touched.
+
+### Key insight
+The original perf attribution was misleading. `shared_ptr` appeared in the profile because
+it was the **instruction pointer when the page fault fired**, not because ref counting itself
+was expensive. The fault happens on first touch of any new page — whatever instruction
+happens to touch it gets "blamed."
+
+### What would actually help
+Reducing the **total number of heap allocations**, not the number of copies:
+- Memory pooling / arena allocation for YAML nodes and strings
+- Pre-reserving hashmap capacity to avoid rehash-triggered allocations
+- Struct-based pipeline (Phase 2 below) that replaces YAML nodes entirely
+- THP (Transparent Huge Pages) would help but can't require end-user config
+
+## Experiment 1: AssetLookup parallel map (branch: asset-lookup-experiment)
+
+### Hypothesis
+A parallel `gLookupMap` storing pre-extracted fields (type, symbol, offset, count) in a
+plain struct would avoid YAML::Node access during hot loops.
+
+### Result
+**17s slower** (52s vs 35s baseline). The parallel map doubled memory usage and hash table
+overhead, causing MORE page faults than it saved.
+
 ## Planned architecture: compiled YAML + struct-based pipeline
 
 ### Phase 1: Compiled binary asset format

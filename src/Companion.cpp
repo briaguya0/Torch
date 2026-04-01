@@ -1639,16 +1639,16 @@ uint32_t Companion::PatchVirtualAddr(uint32_t addr) {
     return addr;
 }
 
-std::optional<std::tuple<std::string, YAML::Node>> Companion::GetNodeByAddr(uint32_t addr) {
+AddrEntry* Companion::GetNodeByAddr(uint32_t addr) {
     if (!Torch::contains(this->gAddrMap, this->gCurrentFile)) {
-        return std::nullopt;
+        return nullptr;
     }
 
     // HACK: Adjust address to rom address if virtual address
     addr = PatchVirtualAddr(addr);
 
     if (Torch::contains(this->gAddrMap[this->gCurrentFile], addr)) {
-        return this->gAddrMap[this->gCurrentFile][addr];
+        return &this->gAddrMap[this->gCurrentFile][addr];
     }
 
     // When multiple segments map to the same ROM data (e.g. segments 6 and 8-13 for overlays),
@@ -1663,7 +1663,7 @@ std::optional<std::tuple<std::string, YAML::Node>> Companion::GetNodeByAddr(uint
                 if (storedAddr != addr && IS_SEGMENTED(storedAddr)) {
                     auto storedSeg = this->GetFileOffsetFromSegmentedAddr(SEGMENT_NUMBER(storedAddr));
                     if (storedSeg.has_value() && storedSeg.value() + SEGMENT_OFFSET(storedAddr) == absAddr) {
-                        return entry;
+                        return &entry;
                     }
                 }
             }
@@ -1677,7 +1677,7 @@ std::optional<std::tuple<std::string, YAML::Node>> Companion::GetNodeByAddr(uint
         }
 
         if (Torch::contains(this->gAddrMap[file], addr)) {
-            return this->gAddrMap[file][addr];
+            return &this->gAddrMap[file][addr];
         }
 
         // VRAM address resolution: if the address is a virtual address (0x80XXXXXX)
@@ -1690,12 +1690,12 @@ std::optional<std::tuple<std::string, YAML::Node>> Companion::GetNodeByAddr(uint
             if (addr >= vramBase) {
                 uint32_t patchedAddr = 0x80000000 | (addr - vramBase);
                 if (Torch::contains(this->gAddrMap[file], patchedAddr)) {
-                    return this->gAddrMap[file][patchedAddr];
+                    return &this->gAddrMap[file][patchedAddr];
                 }
             }
         }
     }
-    return std::nullopt;
+    return nullptr;
 }
 
 std::optional<std::string> Companion::GetStringByAddr(const uint32_t addr) {
@@ -1705,21 +1705,21 @@ std::optional<std::string> Companion::GetStringByAddr(const uint32_t addr) {
 
     auto node = this->GetNodeByAddr(addr);
 
-    if (!node.has_value()) {
+    if (node == nullptr) {
         return std::nullopt;
     }
 
-    return std::get<0>(node.value());
+    return std::get<0>(*node);
 }
 
-std::optional<std::tuple<std::string, YAML::Node>> Companion::GetSafeNodeByAddr(const uint32_t addr, std::string type) {
+AddrEntry* Companion::GetSafeNodeByAddr(const uint32_t addr, std::string type) {
     auto node = this->GetNodeByAddr(addr);
 
-    if (!node.has_value()) {
-        return std::nullopt;
+    if (node == nullptr) {
+        return nullptr;
     }
 
-    auto [name, n] = node.value();
+    auto& [name, n] = *node;
     auto n_type = GetTypeNode(n);
 
     if (n_type != type) {
@@ -1737,11 +1737,11 @@ std::optional<std::string> Companion::GetSafeStringByAddr(const uint32_t addr, s
 
     auto node = this->GetNodeByAddr(addr);
 
-    if (!node.has_value()) {
+    if (node == nullptr) {
         return std::nullopt;
     }
 
-    auto [name, n] = node.value();
+    auto& [name, n] = *node;
     auto n_type = GetTypeNode(n);
 
     if (n_type != type) {
@@ -1749,7 +1749,7 @@ std::optional<std::string> Companion::GetSafeStringByAddr(const uint32_t addr, s
                                  Torch::to_hex(addr, false) + " Found: " + n_type + " Expected: " + type);
     }
 
-    return std::get<0>(node.value());
+    return std::get<0>(*node);
 }
 
 std::string Companion::GetSymbolFromAddr(uint32_t address, bool validZero) {
@@ -1758,8 +1758,8 @@ std::string Companion::GetSymbolFromAddr(uint32_t address, bool validZero) {
 
     if (address == 0 && !validZero) {
         outSymbol << "NULL";
-    } else if (dec.has_value()) {
-        auto node = std::get<1>(dec.value());
+    } else if (dec != nullptr) {
+        auto node = std::get<1>(*dec);
         auto symbol = GetSafeNode<std::string>(node, "symbol");
         outSymbol << "&" << symbol;
     } else {
@@ -1823,22 +1823,22 @@ std::optional<ParseResultData> Companion::GetParseDataBySymbol(const std::string
     return std::nullopt;
 }
 
-std::optional<std::vector<std::tuple<std::string, YAML::Node>>> Companion::GetNodesByType(const std::string& type) {
-    std::vector<std::tuple<std::string, YAML::Node>> nodes;
+std::vector<AddrEntry*> Companion::GetNodesByType(const std::string& type) {
+    std::vector<AddrEntry*> nodes;
 
     if (!Torch::contains(this->gAddrMap, this->gCurrentFile)) {
         return nodes;
     }
 
     for (auto& [addr, tpl] : this->gAddrMap[this->gCurrentFile]) {
-        auto [name, node] = tpl;
+        auto& [name, node] = tpl;
         const auto n_type = GetTypeNode(node);
         if (node["autogen"]) {
             SPDLOG_DEBUG("Skipping autogenerated asset {}", name);
             continue;
         }
         if (n_type == type) {
-            nodes.push_back(tpl);
+            nodes.push_back(&tpl);
         }
     }
 
@@ -1927,8 +1927,8 @@ std::optional<YAML::Node> Companion::AddAsset(YAML::Node asset) {
     const auto symbol = GetSafeNode<std::string>(asset, "symbol", "");
     const auto decl = this->GetNodeByAddr(offset);
 
-    if (decl.has_value()) {
-        auto found = std::get<1>(decl.value());
+    if (decl != nullptr) {
+        auto found = std::get<1>(*decl);
         if (GetTypeNode(found) != type) {
             SPDLOG_ERROR("Asset clash detected {} vs {} at 0x{:X}", type, GetTypeNode(found), offset);
         } else {

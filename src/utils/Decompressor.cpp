@@ -1,6 +1,7 @@
 #include "Decompressor.h"
 #include "TorchUtils.h"
 
+#include <cstdlib>
 #include <stdexcept>
 #include <mutex>
 #include "spdlog/spdlog.h"
@@ -38,7 +39,9 @@ DataChunk* Decompressor::Decode(const std::vector<uint8_t>& buffer, const uint32
                 throw std::runtime_error("Failed to decode MIO0 header");
             }
 
-            const auto decompressed = new uint8_t[head.dest_size];
+            // malloc, not new[]: the cache is freed uniformly and the other decoders below all
+            // return malloc'd buffers.
+            const auto decompressed = static_cast<uint8_t*>(malloc(head.dest_size));
             mio0_decode(in_buf, decompressed, nullptr);
             {
                 std::lock_guard<std::mutex> lock(gDecompCacheMutex);
@@ -121,7 +124,7 @@ DataChunk* Decompressor::DecodeTKMK00(const std::vector<uint8_t>& buffer, const 
     const uint8_t* in_buf = buffer.data() + offset;
 
     const auto decompressed = new uint8_t[size];
-    const auto rgba = new uint8_t[size];
+    const auto rgba = static_cast<uint8_t*>(malloc(size));
     tkmk00_decode(in_buf, decompressed, rgba, alpha);
     {
         std::lock_guard<std::mutex> lock(gDecompCacheMutex);
@@ -382,7 +385,9 @@ bool Decompressor::IsSegmented(uint32_t addr) {
 void Decompressor::ClearCache() {
     std::lock_guard<std::mutex> lock(gDecompCacheMutex);
     for (auto& [key, value] : gCachedChunks) {
-        delete[] value->data;
+        // free, not delete[]: yaz0_decode and the other decoders return malloc'd buffers, so
+        // delete[] here is undefined behaviour. It only survives a shared CRT heap.
+        free(value->data);
     }
     gCachedChunks.clear();
 }

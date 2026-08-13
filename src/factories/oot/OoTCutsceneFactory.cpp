@@ -341,7 +341,18 @@ std::vector<char> CutsceneSerializer::SerializeMM(std::vector<uint8_t>& buffer, 
     w.Write(numCommands);
     w.Write(endFrame);
 
+    // These never fire on the retail rom, but a layout mistake in a command below
+    // would otherwise walk off the end of the sub-array. Log and skip instead.
+    const auto overrun = [&](const char* what, uint32_t i, uint32_t id, uint32_t need) {
+        SPDLOG_ERROR("MM cutscene 0x{:X}: {} overran at command {}/{} (id {}), pos 0x{:X} + 0x{:X} > len 0x{:X}",
+                     segAddr, what, i, numCommands, id, r.GetBaseAddress(), need, r.GetLength());
+    };
+
     for (uint32_t i = 0; i < numCommands; i++) {
+        if (r.GetBaseAddress() + 8 > r.GetLength()) {
+            overrun("command header", i, 0, 8);
+            return {};
+        }
         uint32_t id = r.ReadUInt32();
         w.Write(id);
 
@@ -352,6 +363,10 @@ std::vector<char> CutsceneSerializer::SerializeMM(std::vector<uint8_t>& buffer, 
             for (uint32_t guard = 0;; guard++) {
                 if (guard > 0x400) {
                     SPDLOG_WARN("MM cutscene at 0x{:X}: spline list did not terminate", segAddr);
+                    return {};
+                }
+                if (r.GetBaseAddress() + 8 > r.GetLength()) {
+                    overrun("spline header", i, id, 8);
                     return {};
                 }
                 uint16_t numEntries = r.ReadUInt16();
@@ -394,6 +409,11 @@ std::vector<char> CutsceneSerializer::SerializeMM(std::vector<uint8_t>& buffer, 
 
         uint32_t count = r.ReadUInt32();
         w.Write(count);
+
+        if (r.GetBaseAddress() + count * MMEntryRawSize(id) > r.GetLength()) {
+            overrun("entries", i, id, count * MMEntryRawSize(id));
+            return {};
+        }
 
         for (uint32_t e = 0; e < count; e++) {
             uint16_t base = r.ReadUInt16();
